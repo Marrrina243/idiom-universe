@@ -54,14 +54,12 @@ function CoreGlow() {
 }
 
 // ═══════════════════════════════════════
-// 星系光环 — 全粒子 · 多维度 (增强版)
+// 星系光环 — 全粒子 · 多维度
 // ═══════════════════════════════════════
 function GalaxyRing({ position, color, radius, label }: { position: [number, number, number]; color: string; radius: number; label?: string }) {
   const ringRef = useRef<THREE.Group>(null);
-  const ringRef2 = useRef<THREE.Group>(null); // 外层慢转
-  const ringRef3 = useRef<THREE.Group>(null); // 极环
   const discRef = useRef<THREE.Mesh>(null);
-  const c = new THREE.Color(color);
+  const c = useMemo(() => new THREE.Color(color), [color]);
 
   function genRing(count: number, rMin: number, rMax: number, yS: number): Float32Array {
     const p = new Float32Array(count * 3);
@@ -75,25 +73,16 @@ function GalaxyRing({ position, color, radius, label }: { position: [number, num
     return p;
   }
 
-  // 原有环
-  const innerCore  = useMemo(() => genRing(600, radius - 0.25, radius + 0.05, 0.04), [radius]);
-  const midBand    = useMemo(() => genRing(400, radius - 0.10, radius + 0.35, 0.10), [radius]);
-  const outerDust  = useMemo(() => genRing(500, radius + 0.15, radius + 0.65, 0.20), [radius]);
-  const halo       = useMemo(() => genRing(200, radius - 0.40, radius + 0.80, 0.30), [radius]);
-  const ringData   = useMemo(() => genRing(150, radius - 0.10, radius + 0.20, 0.05), [radius]);
-  // 新增环
-  const ultraOuter = useMemo(() => genRing(300, radius + 0.50, radius + 1.00, 0.35), [radius]);
-  const tightBright= useMemo(() => genRing(350, radius + 0.02, radius + 0.15, 0.03), [radius]);
-  const sparseHalo = useMemo(() => genRing(100, radius - 0.60, radius + 1.10, 0.50), [radius]);
-  const polarRing  = useMemo(() => genRing(200, radius - 0.20, radius + 0.30, 0.04), [radius]);
+  const innerCore = useMemo(() => genRing(600, radius - 0.25, radius + 0.05, 0.04), [radius]);
+  const midBand  = useMemo(() => genRing(400, radius - 0.10, radius + 0.35, 0.10), [radius]);
+  const outerDust = useMemo(() => genRing(500, radius + 0.15, radius + 0.65, 0.20), [radius]);
+  const halo     = useMemo(() => genRing(200, radius - 0.40, radius + 0.80, 0.30), [radius]);
+  const ringData = useMemo(() => genRing(150, radius - 0.10, radius + 0.20, 0.05), [radius]);
 
-  const bright = `#${c.clone().multiplyScalar(1.5).getHexString()}`;
+  const bright = useMemo(() => '#' + c.clone().multiplyScalar(1.5).getHexString(), [c]);
   const base = color;
-  const dim = `#${c.clone().multiplyScalar(0.55).getHexString()}`;
-  const warm = `#${c.clone().lerp(new THREE.Color('#ffd700'), 0.3).getHexString()}`;
-  const cool = `#${c.clone().lerp(new THREE.Color('#88ccff'), 0.25).getHexString()}`;
+  const dim = useMemo(() => '#' + c.clone().multiplyScalar(0.55).getHexString(), [c]);
 
-  // 原有交叉环
   const crossDefs = useMemo(() => [
     { rx: Math.PI * 0.15, ry: 0,            o: 0.28, s: 0.014, sp: 0.15 },
     { rx: Math.PI * 0.30, ry: Math.PI * 0.1, o: 0.22, s: 0.012, sp: -0.12 },
@@ -102,20 +91,11 @@ function GalaxyRing({ position, color, radius, label }: { position: [number, num
     { rx: Math.PI * 0.70, ry: 0,            o: 0.10, s: 0.009, sp: 0.20 },
     { rx: Math.PI * 0.85, ry: Math.PI * 0.15, o: 0.08, s: 0.008, sp: -0.16 },
   ], []);
-  // 新增交叉环 (用 brighter 粒子)
-  const crossDefs2 = useMemo(() => [
-    { rx: Math.PI * 0.10, ry: Math.PI * 0.4, o: 0.20, s: 0.016, sp: 0.22 },
-    { rx: Math.PI * 0.40, ry: Math.PI * 0.5, o: 0.16, s: 0.013, sp: -0.18 },
-    { rx: Math.PI * 0.60, ry: Math.PI * 0.3, o: 0.12, s: 0.011, sp: 0.25 },
-    { rx: Math.PI * 0.80, ry: Math.PI * 0.35,o: 0.09, s: 0.010, sp: -0.20 },
-  ], []);
 
   const breatheRef = useRef(0);
   useFrame((_, d) => {
     if (!ringRef.current) return;
     ringRef.current.rotation.y += d * 0.04;
-    if (ringRef2.current) ringRef2.current.rotation.y -= d * 0.025;
-    if (ringRef3.current) { ringRef3.current.rotation.x += d * 0.06; ringRef3.current.rotation.z += d * 0.04; }
     breatheRef.current += d;
     const breathe = Math.sin(breatheRef.current * 0.5);
     ringRef.current.scale.setScalar(1 + breathe * 0.015);
@@ -126,71 +106,31 @@ function GalaxyRing({ position, color, radius, label }: { position: [number, num
 
   return (
     <>
-      {/* 星云底光 — 极淡色盘，衬托星系 */}
       <mesh ref={discRef} position={position} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[radius - 0.6, radius + 1.5, 64]} />
+        <ringGeometry args={[radius - 0.6, radius + 1.2, 64]} />
         <meshBasicMaterial color={color} transparent opacity={0.025} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
-
-      {/* 主环组 (慢转) */}
       <group ref={ringRef} position={position} rotation={[Math.PI / 2.3, 0.12, 0.08]}>
-        {/* 密集内环 */}
         <points>
           <bufferGeometry><bufferAttribute attach="attributes-position" count={600} array={innerCore} itemSize={3} /></bufferGeometry>
           <pointsMaterial size={0.018} color={bright} transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
         </points>
-        {/* 紧致亮环 */}
-        <points>
-          <bufferGeometry><bufferAttribute attach="attributes-position" count={350} array={tightBright} itemSize={3} /></bufferGeometry>
-          <pointsMaterial size={0.012} color={warm} transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
-        </points>
-        {/* 中层 */}
         <points>
           <bufferGeometry><bufferAttribute attach="attributes-position" count={400} array={midBand} itemSize={3} /></bufferGeometry>
           <pointsMaterial size={0.028} color={base} transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
         </points>
-        {/* 外层尘埃 */}
         <points>
           <bufferGeometry><bufferAttribute attach="attributes-position" count={500} array={outerDust} itemSize={3} /></bufferGeometry>
           <pointsMaterial size={0.040} color={dim} transparent opacity={0.3} depthWrite={false} blending={THREE.AdditiveBlending} />
         </points>
-        {/* 超外环 */}
-        <points>
-          <bufferGeometry><bufferAttribute attach="attributes-position" count={300} array={ultraOuter} itemSize={3} /></bufferGeometry>
-          <pointsMaterial size={0.055} color={cool} transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
-        </points>
-        {/* 光晕 */}
         <points>
           <bufferGeometry><bufferAttribute attach="attributes-position" count={200} array={halo} itemSize={3} /></bufferGeometry>
           <pointsMaterial size={0.060} color={dim} transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} />
         </points>
-        {/* 稀疏光晕 */}
-        <points>
-          <bufferGeometry><bufferAttribute attach="attributes-position" count={100} array={sparseHalo} itemSize={3} /></bufferGeometry>
-          <pointsMaterial size={0.080} color={warm} transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
-        </points>
-        {/* 交叉环 6 个 */}
         {crossDefs.map(({ rx, ry, o, s, sp }, i) => (
           <CrossRing key={i} ringData={ringData} rx={rx} ry={ry} opacity={o} size={s} color={bright} speed={sp} />
         ))}
       </group>
-
-      {/* 第二环组 (反向旋转，不同角度) */}
-      <group ref={ringRef2} position={position} rotation={[Math.PI / 3.5, -0.3, 0.15]}>
-        {crossDefs2.map(({ rx, ry, o, s, sp }, i) => (
-          <CrossRing key={`c2-${i}`} ringData={ultraOuter} rx={rx} ry={ry} opacity={o} size={s} color={cool} speed={sp} />
-        ))}
-      </group>
-
-      {/* 极环 (垂直方向) */}
-      <group ref={ringRef3} position={position} rotation={[0, 0, Math.PI / 2]}>
-        <points>
-          <bufferGeometry><bufferAttribute attach="attributes-position" count={200} array={polarRing} itemSize={3} /></bufferGeometry>
-          <pointsMaterial size={0.022} color={bright} transparent opacity={0.3} depthWrite={false} blending={THREE.AdditiveBlending} />
-        </points>
-      </group>
-
-      {/* 星系名牌 */}
       {label && (
         <Text position={[position[0], position[1] + 1.0, position[2]]}
           fontSize={0.25} color={base} anchorX="center" anchorY="middle"
