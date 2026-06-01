@@ -369,31 +369,6 @@ function IdiomSphere({ node, onHover }: { node: IdiomNode; onHover: (id: string 
     return () => clearTimeout(t);
   }, [awake]);
 
-  // 每个星球独特的色彩偏移 (五颜六色)
-  const planetColors = useMemo(() => {
-    let h = 0;
-    for (let i = 0; i < node.text.length; i++) h = (h * 31 + node.text.charCodeAt(i)) & 0xffff;
-    const hueShift = ((h % 60) - 30); // ±30° 色相偏移
-    const basePrimary = new THREE.Color(GALAXY_COLOR_MAP[node.galaxy].primary);
-    const baseSecondary = new THREE.Color(GALAXY_COLOR_MAP[node.galaxy].secondary);
-
-    // HSL 偏移
-    const priHsl = {};
-    basePrimary.getHSL(priHsl);
-    const newHue = ((priHsl.h * 360 + hueShift) % 360 + 360) % 360;
-    const primary = new THREE.Color().setHSL(newHue / 360, Math.min(1, priHsl.s + 0.15), 0.35 + (h % 30) / 100);
-
-    const secHsl = {};
-    baseSecondary.getHSL(secHsl);
-    const secNewHue = ((secHsl.h * 360 + hueShift * 0.6) % 360 + 360) % 360;
-    const secondary = new THREE.Color().setHSL(secNewHue / 360, Math.min(1, secHsl.s + 0.2), 0.45 + (h % 25) / 100);
-
-    return {
-      primary: `#${primary.getHexString()}`,
-      secondary: `#${secondary.getHexString()}`,
-    };
-  }, [node.text, node.galaxy]);
-
   const rotSpeed = useMemo(() => {
     let h = 0;
     for (let i = 0; i < node.id.length; i++) h = (h * 31 + node.id.charCodeAt(i)) & 0xffff;
@@ -406,6 +381,7 @@ function IdiomSphere({ node, onHover }: { node: IdiomNode; onHover: (id: string 
     return (h % 1000) / 1000 * Math.PI * 2;
   }, [node.text]);
 
+  const colors = GALAXY_COLOR_MAP[node.galaxy];
   const baseY = node.position[1];
 
   const handleClick = () => {
@@ -433,12 +409,12 @@ function IdiomSphere({ node, onHover }: { node: IdiomNode; onHover: (id: string 
       onPointerOut={() => { setHovered(false); onHover(null); }}
       onClick={handleClick}
     >
-      <PlanetMaterial type={node.visualType} color={planetColors.primary}
-        secondaryColor={planetColors.secondary} hovered={hovered} isAwake={hovered || awake} />
-      <PlanetHalo hovered={hovered} color={planetColors.secondary} />
-      <HoverBurst active={hovered} position={[0, 0, 0]} color={planetColors.secondary} />
+      <PlanetMaterial type={node.visualType} color={colors.primary}
+        secondaryColor={colors.secondary} hovered={hovered} isAwake={hovered || awake} />
+      <PlanetHalo hovered={hovered} color={colors.secondary} />
+      <HoverBurst active={hovered} position={[0, 0, 0]} color={colors.secondary} />
       {showText && (
-        <Text position={[0, 0.20, 0]} fontSize={0.10} color={planetColors.secondary}
+        <Text position={[0, 0.20, 0]} fontSize={0.10} color={colors.secondary}
           anchorX="center" anchorY="middle" depthTest={true}
           font="/fonts/SimHei.ttf"
           outlineWidth={0.008} outlineColor="#000008">
