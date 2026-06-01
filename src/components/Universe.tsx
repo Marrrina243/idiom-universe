@@ -356,7 +356,7 @@ function IdiomSphere({ node, onHover }: { node: IdiomNode; onHover: (id: string 
       {showText && (
         <Text position={[0, 0.20, 0]} fontSize={0.10} color={colors.secondary}
           anchorX="center" anchorY="middle" depthTest={true}
-          font="/fonts/SimHei.ttf"
+
           outlineWidth={0.008} outlineColor="#000008">
           {node.text}
         </Text>
