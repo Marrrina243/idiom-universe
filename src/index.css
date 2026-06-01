@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════
+   成语星空 — Global Styles
+   Modern · Clean · Dark Theme
+   ═══════════════════════════════════════════ */
+
+:root {
+  --color-jilan-deep: #020208;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #000005;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Inter", system-ui, sans-serif;
+}
+
+/* 竖排文本 */
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* 滚动条 — 暗色极简 */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
